@@ -1,4 +1,3 @@
-
 const CURRENCY_FORMATTER = new Intl.NumberFormat("en-GB", {
   currency: "GBP",
   style: "currency",
