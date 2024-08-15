@@ -14,7 +14,7 @@ export default function Component() {
            </div>
            <span className='text-primary'>Expense Tracker</span>
         </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
+        <nav className="ml-auto  gap-4 sm:gap-6 hidden sm:flex">
           <Link to="/register" className="text-sm font-medium text-primary hover:underline underline-offset-4">
             <Button variant='ghost'>Sign Up</Button>
           </Link>
@@ -24,7 +24,7 @@ export default function Component() {
         </nav>
       </header>
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
+        <section className="w-full py-5 md:py-6 lg:py-7 xl:py-8">
           <div className="container px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-[1fr_550px] lg:gap-12 xl:grid-cols-[1fr_650px]">
               <div className="flex flex-col justify-center space-y-4">
@@ -53,13 +53,13 @@ export default function Component() {
                   </Link>
                 </div>
               </div>
-              <img
-                src="/placeholder.svg"
-                width="550"
-                height="310"
-                alt="Expense Tracker"
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full"
-              />
+              <div className="flex flex-col justify-center items-center">
+                <img
+                  src="/expense-ss.jpg"
+                  alt="Expense Tracker"
+                  className="overflow-hidden rounded-xl shadow-xl object-contain object-center "
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -76,26 +76,30 @@ export default function Component() {
                   budgets, and generate detailed reports.
                 </p>
               </div>
-              <img
-                src="/placeholder.svg"
-                width="550"
-                height="310"
-                alt="Expense Tracking"
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full"
-              />
+              <div>
+                <img
+                  src="/expense-create.jpg"
+                  width="550"
+                  height="310"
+                  alt="Expense Tracking"
+                  className="overflow-hidden rounded-xl shadow-xl object-contain object-center sm:w-full"
+                />
+              </div>
             </div>
           </div>
         </section>
         <section className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6">
             <div className="grid items-center gap-6 lg:grid-cols-[500px_1fr] lg:gap-12 xl:grid-cols-[550px_1fr]">
+              <div>
               <img
-                src="/placeholder.svg"
+                src="/budget.jpg"
                 width="550"
                 height="310"
                 alt="Budget Management"
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full"
+                className="overflow-hidden rounded-xl shadow-xl object-contain  object-center sm:w-full"
               />
+              </div>
               <div className="space-y-2">
                 <div className="inline-block rounded-lg bg-muted px-3 py-1 text-sm">Budget Management</div>
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
@@ -122,13 +126,16 @@ export default function Component() {
                   make informed financial decisions.
                 </p>
               </div>
-              <img
-                src="/placeholder.svg"
-                width="550"
-                height="310"
-                alt="Expense Reporting"
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full"
-              />
+              <div>
+
+                <img
+                  src="/report.jpg"
+                  width="550"
+                  height="310"
+                  alt="Expense Reporting"
+                  className="overflow-hidden rounded-xl shadow-xl object-contain  object-center sm:w-full"
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -164,14 +171,14 @@ export default function Component() {
       </main>
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t container">
         <p className="text-xs text-muted-foreground">&copy; 2024 Expense Tracker. All rights reserved.</p>
-        <nav className="sm:ml-auto flex gap-4 sm:gap-6">
-          <Link to="#" className="text-xs hover:underline underline-offset-4" >
+        {/* <nav className="sm:ml-auto flex gap-4 sm:gap-6"> */}
+          {/* <Link to="#" className="text-xs hover:underline underline-offset-4" >
             Terms of Service
           </Link>
           <Link to="#" className="text-xs hover:underline underline-offset-4" >
             Privacy
           </Link>
-        </nav>
+        </nav> */}
       </footer>
     </div>
   )

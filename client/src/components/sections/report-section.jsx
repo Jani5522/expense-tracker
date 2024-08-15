@@ -1,4 +1,5 @@
 import { useState } from "react";
+import useSWR from "swr";
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import {
@@ -7,7 +8,6 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter,
 } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -16,37 +16,19 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { CalendarIcon } from "lucide-react";
 import { formatCurrency } from "@/lib/formatters";
 
+const fetcher = (url) => fetch(url).then((res) => res.json());
+
 export default function ReportSection() {
   const [selectedTimeframe, setSelectedTimeframe] = useState("month");
+  const { data, error } = useSWR(`/api/dashboard/report-data?timeframe=${selectedTimeframe}`, fetcher);
 
-  const expenses = [
-    { category: "Rent", amount: 1200 },
-    { category: "Groceries", amount: 500 },
-    { category: "Utilities", amount: 300 },
-    { category: "Transportation", amount: 150 },
-    { category: "Entertainment", amount: 250 },
-    { category: "Miscellaneous", amount: 100 },
-  ];
+  if (error) return <div>Error loading data</div>;
+  if (!data) return <div>Loading...</div>;
 
-  const income = [
-    { source: "Salary", amount: 5000 },
-    { source: "Freelance", amount: 1500 },
-    { source: "Investments", amount: 800 },
-  ];
-
-  const budget = {
-    total: 6000,
-    actual: 5500,
-    surplus: 500,
-  };
-
-  const handleTimeframeChange = (value) => {
-    setSelectedTimeframe(value);
-  };
+  const { expenses, income, budget } = data;
 
   const expenseOptions = {
     chart: {
@@ -92,13 +74,13 @@ export default function ReportSection() {
 
   const budgetOptions = {
     chart: {
-      type: "line",
+      type: "bar",
     },
     title: {
-      text: "Budget",
+      text: "Budget Overview",
     },
     xAxis: {
-      categories: ["Total", "Actual", "Surplus"],
+      categories: budget.map(item => item.name),
     },
     yAxis: {
       title: {
@@ -107,165 +89,111 @@ export default function ReportSection() {
     },
     series: [
       {
-        name: "Budget",
-        data: [budget.total, budget.actual, budget.surplus],
+        name: "Overview",
+        data: budget.filter(item => item.y !== 0).map(item => ({ name: item.name, y: item.y })),
       },
     ],
   };
 
   return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Expenses</CardTitle>
-            <CardDescription>Summary of your monthly expenses</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-between items-center mb-4">
-              <div className="text-4xl font-bold">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>Expenses</CardTitle>
+          <CardDescription>Summary of your {selectedTimeframe} expenses</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-between items-center mb-4">
+            <div className="text-4xl font-bold">
               {formatCurrency(expenses.reduce((total, expense) => total + expense.amount, 0))}
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <CalendarIcon className="w-4 h-4 mr-2" />
-                    {selectedTimeframe === "month"
-                      ? "This Month"
-                      : selectedTimeframe === "year"
-                      ? "This Year"
-                      : "All Time"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={() => handleTimeframeChange("month")}>
-                    This Month
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => handleTimeframeChange("year")}>
-                    This Year
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => handleTimeframeChange("all")}>
-                    All Time
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              {expenses.map((expense, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <div className="text-sm font-medium">{expense.category}</div>
-                  <div className="text-sm font-medium">{formatCurrency(expense.amount)}</div>
-                </div>
-              ))}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <CalendarIcon className="w-4 h-4 mr-2" />
+                  {selectedTimeframe === "month"
+                    ? "This Month"
+                    : selectedTimeframe === "last-month"
+                    ? "Last Month"
+                    : selectedTimeframe === "last-three-months"
+                    ? "Last 3 Months"
+                    : selectedTimeframe === "year"
+                    ? "This Year"
+                    : "All Time"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setSelectedTimeframe("month")}>
+                  This Month
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setSelectedTimeframe("last-month")}>
+                  Last Month
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setSelectedTimeframe("last-three-months")}>
+                  Last 3 Months
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setSelectedTimeframe("year")}>
+                  This Year
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <HighchartsReact highcharts={Highcharts} options={expenseOptions} />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Income</CardTitle>
+          <CardDescription>Summary of your {selectedTimeframe} income</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-between items-center mb-4">
+            <div className="text-4xl font-bold">
+              {formatCurrency(income.reduce((total, source) => total + source.amount, 0))}
             </div>
-            <Separator className="my-4" />
-            <HighchartsReact highcharts={Highcharts} options={expenseOptions} />
-          </CardContent>
-          <CardFooter className="flex justify-end">
-            {/* <Button variant="outline">Export Expenses</Button> */}
-          </CardFooter>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Income</CardTitle>
-            <CardDescription>Summary of your monthly income</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-between items-center mb-4">
-              <div className="text-4xl font-bold">
-                {formatCurrency(income.reduce((total, source) => total + source.amount, 0))}
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <CalendarIcon className="w-4 h-4 mr-2" />
-                    {selectedTimeframe === "month"
-                      ? "This Month"
-                      : selectedTimeframe === "year"
-                      ? "This Year"
-                      : "All Time"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={() => handleTimeframeChange("month")}>
-                    This Month
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => handleTimeframeChange("year")}>
-                    This Year
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => handleTimeframeChange("all")}>
-                    All Time
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              {income.map((source, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <div className="text-sm font-medium">{source.source}</div>
-                  <div className="text-sm font-medium">{formatCurrency(source.amount)}</div>
-                </div>
-              ))}
-            </div>
-            <Separator className="my-4" />
-            <HighchartsReact highcharts={Highcharts} options={incomeOptions} />
-          </CardContent>
-          <CardFooter className="flex justify-end">
-            {/* <Button variant="outline">Export Income</Button> */}
-          </CardFooter>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Budget</CardTitle>
-            <CardDescription>Summary of your monthly budget</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-between items-center mb-4">
-              <div className="text-4xl font-bold">{formatCurrency(budget.total)}</div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <CalendarIcon className="w-4 h-4 mr-2" />
-                    {selectedTimeframe === "month"
-                      ? "This Month"
-                      : selectedTimeframe === "year"
-                      ? "This Year"
-                      : "All Time"}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onSelect={() => handleTimeframeChange("month")}>
-                    This Month
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => handleTimeframeChange("year")}>
-                    This Year
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => handleTimeframeChange("all")}>
-                    All Time
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex justify-between items-center">
-                <div className="text-sm font-medium">Budget</div>
-                <div className="text-sm font-medium">{formatCurrency(budget.total)}</div>
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="text-sm font-medium">Actual</div>
-                <div className="text-sm font-medium">{formatCurrency(budget.actual)}</div>
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="text-sm font-medium">Surplus</div>
-                <div className="text-sm font-medium">{formatCurrency(budget.surplus)}</div>
-              </div>
-            </div>
-            <Separator className="my-4" />
-            <HighchartsReact highcharts={Highcharts} options={budgetOptions} />
-          </CardContent>
-          <CardFooter className="flex justify-end">
-            {/* <Button variant="outline">Export Budget</Button> */}
-          </CardFooter>
-        </Card>
-      </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <CalendarIcon className="w-4 h-4 mr-2" />
+                  {selectedTimeframe === "month"
+                    ? "This Month"
+                    : selectedTimeframe === "last-month"
+                    ? "Last Month"
+                    : selectedTimeframe === "last-three-months"
+                    ? "Last 3 Months"
+                    : selectedTimeframe === "year"
+                    ? "This Year"
+                    : "All Time"}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => setSelectedTimeframe("month")}>
+                  This Month
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setSelectedTimeframe("last-month")}>
+                  Last Month
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setSelectedTimeframe("last-three-months")}>
+                  Last 3 Months
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setSelectedTimeframe("year")}>
+                  This Year
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          <HighchartsReact highcharts={Highcharts} options={incomeOptions} />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Budget</CardTitle>
+          <CardDescription>Summary of your {selectedTimeframe} budget</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <HighchartsReact highcharts={Highcharts} options={budgetOptions} />
+        </CardContent>
+      </Card>
+    </div>
   );
 }

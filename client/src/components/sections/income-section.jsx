@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import useSWR from 'swr';
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -9,44 +10,12 @@ import { IncomeForm } from "./income-form";
 import { RotateCcw } from "lucide-react";
 import IncomeSummary from "./income-summary";
 
+const fetcher = (url) => fetch(url).then((res) => res.json());
+
 export default function IncomeSection() {
-  const [incomeEntries, setIncomeEntries] = useState([
-    {
-      id: 1,
-      amount: 2500.0,
-      date: "2024-01-15",
-      source: "Freelance Work",
-      description: "Payment for website design project",
-    },
-    {
-      id: 2,
-      amount: 1800.0,
-      date: "2024-01-30",
-      source: "Part-Time Job",
-      description: "Paycheck for May",
-    },
-    {
-      id: 3,
-      amount: 3200.0,
-      date: "2024-01-01",
-      source: "Consulting Gig",
-      description: "Payment for business strategy consultation",
-    },
-    {
-      id: 4,
-      amount: 1200.0,
-      date: "2024-01-01",
-      source: "Freelance Work",
-      description: "Payment for content writing project",
-    },
-    {
-      id: 5,
-      amount: 2000.0,
-      date: "2024-01-20",
-      source: "Part-Time Job",
-      description: "Paycheck for June",
-    },
-  ]);
+  // Fetching income entries and summary from the API
+  const { data: incomeEntries = [], mutate } = useSWR('/api/income', fetcher);
+  const { data: incomeSummary, mutate: mutateSummary } = useSWR('/api/income/summary', fetcher);
 
   const [filterOptions, setFilterOptions] = useState({
     dateRange: {
@@ -62,7 +31,7 @@ export default function IncomeSection() {
 
   const [sortOptions, setSortOptions] = useState({
     key: "date",
-    order: "asc",
+    order: "desc",
   });
 
   const [showModal, setShowModal] = useState(false);
@@ -89,44 +58,32 @@ export default function IncomeSection() {
     }));
   };
 
-  const handleDelete = (id) => {
-    setIncomeEntries((prevEntries) =>
-      prevEntries.filter((entry) => entry.id !== id)
-    );
-  };
+  const handleDelete = async (id) => {
+    try {
+      const response = await fetch(`/api/income/${id}`, {
+        method: 'DELETE',
+      });
 
-  const handleEdit = (entry) => {
-    setEditEntry(entry);
-    setShowModal(true);
-  };
+      if (!response.ok) {
+        throw new Error('Failed to delete income entry');
+      }
 
-  const handleCreateOrUpdateIncomeEntry = (newIncomeEntry) => {
-    if (editEntry) {
-      // Update existing entry
-      setIncomeEntries((prevEntries) =>
-        prevEntries.map((entry) =>
-          entry.id === editEntry.id
-            ? {
-                ...entry,
-                ...newIncomeEntry,
-                amount: parseFloat(newIncomeEntry.amount),
-              }
-            : entry
-        )
-      );
-    } else {
-      // Add new entry
-      const newEntry = {
-        id: incomeEntries.length + 1,
-        amount: parseFloat(newIncomeEntry.amount),
-        date: newIncomeEntry.date,
-        source: newIncomeEntry.source,
-        description: newIncomeEntry.description,
-      };
-      setIncomeEntries((prevEntries) => [...prevEntries, newEntry]);
+      mutate(); // Re-fetch income entries after deletion
+      mutateSummary();
+    } catch (error) {
+      console.error('Error deleting income entry:', error);
     }
-    setEditEntry(null);
-    setShowModal(false);
+  };
+
+  const handleCreateOrUpdateIncomeEntry = async () => {
+    try {
+      mutate(); // Re-fetch income entries after save
+      mutateSummary();
+      setEditEntry(null);
+      setShowModal(false);
+    } catch (error) {
+      console.error('Error saving income entry:', error);
+    }
   };
 
   const filteredAndSortedEntries = useMemo(() => {
@@ -181,19 +138,24 @@ export default function IncomeSection() {
     });
   };
 
+  const handleEdit = (entry) =>{
+    setEditEntry(entry)
+    setShowModal(true)
+  }
+
   return (
     <div className="w-full mx-auto">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex gap-4 flex-col md:flex-row  items-center justify-between">
         <div>
-          <p className="text-primary/70">View and manage your income sources and amounts.</p>
+          <p className="text-primary/70 text-center sm:text-start">View and manage your income sources and amounts.</p>
         </div>
         <Button onClick={() => setShowModal(true)}>Create Income</Button>
       </div>
       <div className="my-5">
         <IncomeSummary 
-          averageMonthlyIncome={5000}  // Example values; replace with actual calculation
-          totalYearlyIncome={60000}    // Example values; replace with actual calculation
-          highestMonthlyIncome={3200}  // Example values; replace with actual calculation
+          averageMonthlyIncome={incomeSummary?.currentMonthIncome || 0}
+          totalYearlyIncome={incomeSummary?.totalYearlyIncome || 0}
+          highestMonthlyIncome={incomeSummary?.highestMonthlyIncome || 0}
         />
       </div>
       <div className="bg-background border rounded-lg shadow-sm overflow-hidden">
@@ -278,7 +240,7 @@ export default function IncomeSection() {
               setEditEntry(null);
               setShowModal(false);
             }}
-            entry={editEntry}
+            editEntry={editEntry}
           />
         </DialogContent>
       </Dialog>

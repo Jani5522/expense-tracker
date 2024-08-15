@@ -1,60 +1,120 @@
 import { useState } from "react";
+import useSWR, { mutate } from "swr";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/formatters";
+import { ExpenseCategorySelect } from "./expense-category-dropdown";
+
+// SWR fetcher function
+const fetcher = url => fetch(url).then(res => res.json());
 
 const BudgetSection = () => {
-  const [budgets, setBudgets] = useState([
-    { category: "Groceries", budget: 500, spent: 450 },
-    { category: "Utilities", budget: 200, spent: 180 },
-    { category: "Entertainment", budget: 150, spent: 180 }
-  ]);
-
+  const { data: budgets = [], error } = useSWR('/api/budgets', fetcher);
   const [newBudget, setNewBudget] = useState({ category: "", budget: "" });
   const [editBudget, setEditBudget] = useState(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
     setNewBudget(prevState => ({ ...prevState, [id]: value }));
+    setFormError(""); // Clear error on input change
   };
 
   const handleSelectChange = (value) => {
     setNewBudget(prevState => ({ ...prevState, category: value }));
+    setFormError(""); // Clear error on select change
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    // Check for duplicate category
+    const duplicate = budgets.some(budget => budget.category === newBudget.category);
+    if (duplicate) {
+      setFormError("A budget for this category already exists.");
+      return;
+    }
+
     if (newBudget.category && newBudget.budget) {
-      setBudgets([...budgets, { ...newBudget, spent: 0 }]);
-      setNewBudget({ category: "", budget: "" });
+      try {
+        const response = await fetch("/api/budgets", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(newBudget),
+        });
+
+        if (response.ok) {
+          mutate('/api/budgets'); // Revalidate data
+          setNewBudget({ category: "", budget: "" });
+        } else {
+          console.error("Error creating budget:", response.statusText);
+        }
+      } catch (error) {
+        console.error("Error creating budget:", error);
+      }
     }
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
-    setBudgets(budgets.map(budget => budget.category === editBudget.category ? editBudget : budget));
-    setEditBudget(null);
-    setIsDialogOpen(false);  // Close the dialog after successful submission
+
+    try {
+      const response = await fetch(`/api/budgets/${editBudget.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ budget: editBudget.budget }),
+      });
+
+      if (response.ok) {
+        mutate('/api/budgets'); // Revalidate data
+        setEditBudget(null);
+        setIsDialogOpen(false);  // Close the dialog after successful submission
+      } else {
+        console.error("Error updating budget:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error updating budget:", error);
+    }
+  };
+
+  const handleDelete = async (category) => {
+    const budgetToDelete = budgets.find(budget => budget.category === category);
+    try {
+      const response = await fetch(`/api/budgets/${budgetToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        mutate('/api/budgets'); // Revalidate data
+      } else {
+        console.error("Error deleting budget:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error deleting budget:", error);
+    }
   };
 
   const handleEditChange = (e) => {
-    const { id, value } = e.target;
-    setEditBudget(prevState => ({ ...prevState, [id]: value }));
+    const { value } = e.target;
+    setEditBudget(prevState => ({
+      ...prevState,
+      budget: value,
+    }));
   };
 
-  const handleDelete = (category) => {
-    setBudgets(budgets.filter(budget => budget.category !== category));
-  };
+  if (error) return <div>Failed to load budgets</div>;
 
   return (
     <div className="flex gap-4 flex-col-reverse md:flex-row">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 grow">
-        {budgets.map((budget, index) => (
+        {budgets && budgets?.map((budget, index) => (
           <Card key={index}>
             <CardHeader>
               <CardTitle className='capitalize'>{budget.category}</CardTitle>
@@ -115,23 +175,13 @@ const BudgetSection = () => {
             <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
               <div>
                 <Label htmlFor="category">Category</Label>
-                <Select id="category" onValueChange={handleSelectChange} value={newBudget.category}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="groceries">Groceries</SelectItem>
-                    <SelectItem value="utilities">Utilities</SelectItem>
-                    <SelectItem value="entertainment">Entertainment</SelectItem>
-                    <SelectItem value="transportation">Transportation</SelectItem>
-                    <SelectItem value="healthcare">Healthcare</SelectItem>
-                  </SelectContent>
-                </Select>
+                <ExpenseCategorySelect  onChange={handleSelectChange} value={newBudget.category} />
               </div>
               <div>
                 <Label htmlFor="budget">Monthly Budget</Label>
                 <Input id="budget" type="number" placeholder="Enter amount" value={newBudget.budget} onChange={handleInputChange} />
               </div>
+              {formError && <p className="text-red-500">{formError}</p>}
               <div className="col-span-1 md:col-span-2 flex justify-end">
                 <Button type="submit">Create Budget</Button>
               </div>

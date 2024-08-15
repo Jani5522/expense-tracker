@@ -22,9 +22,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { formatNumber } from "@/lib/formatters";
+import { formatCurrency } from "@/lib/formatters";
 import { useLocation } from "react-router-dom";
 import { EntryCreator } from "./entry-creator";
+import { useAuth } from "../../context/auth-context";
+import useSWR from 'swr';
+
+const fetcher = (url) => fetch(url).then((res) => res.json());
 
 const pathname = [
   { to: '/dashboard', name: "Dashboard", icon: <Home className='h-4 w-4' /> },
@@ -37,10 +41,19 @@ const pathname = [
   { to: "/budget", name: "Budget", icon: <PieChart className='h-4 w-4' /> },
   { to: "/category", name: "Category", icon: <Tag className='h-4 w-4' /> },
   { to: "/report", name: "Report", icon: <BarChart2 className='h-4 w-4' /> },
+  { to: "/recurring-expense", name: "Recurring Expense", icon: <CreditCard className='h-4 w-4' /> },
 ];
 
+
 export default function Dashboard({ children }) {
+
+  const { data, error } = useSWR('/api/dashboard/current-balance', fetcher, { refreshInterval: 500 });
   const { pathname: currentPathname } = useLocation();
+  const {logout} = useAuth();
+
+  if (error) return <div>Failed to load</div>;
+  if (!data) return <div>Loading...</div>;
+
   return (
     <>
       <div className='container px-0 grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] '>
@@ -73,14 +86,14 @@ export default function Dashboard({ children }) {
             </div>
           </div>
         </div>
-        <div className='flex flex-col'>
+        <div className='flex flex-col max-w-[100vw]'>
           <header className='flex h-14 items-center gap-4 border-b bg-muted px-4 lg:h-[60px] lg:px-6 sticky top-0 z-50'>
             <Sheet>
               <SheetTrigger asChild>
                 <Button
                   variant='default'
                   size='icon'
-                  className='shrink-0 md:hidden'
+                  className='  md:hidden'
                 >
                   <Menu className='h-5 w-5' />
                   <span className='sr-only'>Toggle navigation menu</span>
@@ -95,13 +108,13 @@ export default function Dashboard({ children }) {
                     <div className='object-contain w-10'>
                       <img src='/logo.png' alt='logo' />
                     </div>
-                    <span>Expense Tracker</span>
+                    <span>Expense Trackera</span>
                   </Link>
                   {pathname.map((path) => (
                     <Link
                       key={path.to}
                       to={path.to}
-                      className='mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground'
+                      className='mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2'
                     >
                       {path.icon}
                       {path.name}
@@ -119,9 +132,9 @@ export default function Dashboard({ children }) {
                 </div>
               </form>
             </div>
-            <div className='mt-auto p-4 px-8 flex text-secondary-foreground justify-start items-center gap-2 '>
+            <div className='mt-auto p-4 px-1 flex text-secondary-foreground justify-start items-center gap-2 '>
               <BadgePoundSterlingIcon className=' w-5 h-5' />
-              <p className=''>{formatNumber(100000)}</p>
+              <p className=''>{formatCurrency(data?.currentBalance || 0)}</p>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -137,10 +150,9 @@ export default function Dashboard({ children }) {
               <DropdownMenuContent align='end'>
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
-                  <Button variant='destructive' className='w-full min-w-36'>
+                  <Button variant='destructive' className='w-full min-w-36' onClick={logout}>
                     Logout
                   </Button>
                 </DropdownMenuItem>

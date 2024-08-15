@@ -1,6 +1,7 @@
 import { formatCurrency } from "@/lib/formatters";
 import { Card, CardHeader, CardTitle, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
+import moment from "moment";
 
 const IncomeSummary = ({ averageMonthlyIncome = 0, totalYearlyIncome = 0, highestMonthlyIncome = 0 }) => {
   return (
@@ -13,7 +14,7 @@ const IncomeSummary = ({ averageMonthlyIncome = 0, totalYearlyIncome = 0, highes
       <div className='grid md:grid-cols-3 gap-4'>
         <Card>
           <CardHeader className='flex gap-2'>
-            <CardTitle>Average Monthly Income</CardTitle>
+            <CardTitle>Current Month Income</CardTitle>
             <Badge className='max-w-fit' variant='secondary'>Monthly</Badge>
           </CardHeader>
           <CardContent className='text-2xl font-bold text-green-600'>
@@ -22,7 +23,7 @@ const IncomeSummary = ({ averageMonthlyIncome = 0, totalYearlyIncome = 0, highes
         </Card>
         <Card>
           <CardHeader className='flex gap-2'>
-            <CardTitle>Total Yearly Income</CardTitle>
+            <CardTitle>Current Year Income <span className="m-auto text-xs text-secondary-foreground mx-1">{moment().year()}</span></CardTitle>
             <Badge className='max-w-fit' variant='secondary'>Yearly</Badge>
           </CardHeader>
           <CardContent className='text-2xl font-bold text-green-600'>

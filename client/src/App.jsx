@@ -11,20 +11,25 @@ import ExpensePage from './pages/expense-page';
 import LandingPage from './pages/landing-page';
 import DashboardPage from './pages/dashboard-page';
 import ReportPage from './pages/report-page';
+import RedirectAuthenticated from './components/private-route/redirect-authenticated';
+import RecurringExpense from './components/sections/recurring-expense';
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/" element={<LandingPage/>} />
+          <Route element={<RedirectAuthenticated><Outlet /></RedirectAuthenticated>}>
+            <Route path="/" element={<LandingPage/>} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+          </Route >
           {/* protected route with layout */}
           <Route element={<ProtectedRoute><Layout ><Outlet /></Layout></ProtectedRoute>}>
               <Route path="/dashboard" element={<DashboardPage/>} />
               <Route path='/income' element={<IncomePage/>} />
               <Route path='/expense' element={<ExpensePage/>} />
+              <Route path='/recurring-expense' element={<RecurringExpense/>} />
               <Route path='/budget' element={<BudgePage/>} />
               <Route path='/category' element={<CategoryPage/>} />
               <Route path='/report' element={<ReportPage/>} />

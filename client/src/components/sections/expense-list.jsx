@@ -13,6 +13,7 @@ import { ArrowDown, ArrowUp, EllipsisVertical, FilePenIcon, TrashIcon } from "lu
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../ui/dropdown-menu";
 import { ArrowUpDownIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogOverlay } from "../ui/dialog";
+import moment from "moment";
 
 export function ExpenseList({ entries, onEdit, onDelete, onSortChange, sortOptions }) {
   const [isModalOpen, setModalOpen] = useState(false);
@@ -71,12 +72,18 @@ export function ExpenseList({ entries, onEdit, onDelete, onSortChange, sortOptio
         <TableBody>
           {entries.map((entry) => (
             <TableRow key={entry.id}>
-              <TableCell className='flex items-end justify-center'>
-                <Button variant='ghost' onClick={() => openModal(entry.receipt)}>
-                  <img alt='receipt' src={entry.receipt} className="size-full object-cover"/>
-                </Button>
-              </TableCell>
-              <TableCell>{entry.date}</TableCell>
+              {entry?.receipt ? (
+                <TableCell className="flex items-end justify-center">
+                    <Button variant="ghost" onClick={() => openModal(entry.receipt)}>
+                      <img alt="receipt" src={entry.receipt} className="size-full object-cover" />
+                    </Button>
+                </TableCell>
+                ) : (
+                  <TableCell className="text-center">
+                    <p className='text-gray-400'>No Image</p>
+                  </TableCell>
+                )}
+              <TableCell>{moment(entry.date).format('DD MMM, YYYY')}</TableCell>
               <TableCell>{entry.category}</TableCell>
               <TableCell className="text-start">{formatCurrency(entry.amount)}</TableCell>
               <TableCell className="text-center max-w-52">{entry.description}</TableCell>
@@ -118,7 +125,7 @@ export function ExpenseList({ entries, onEdit, onDelete, onSortChange, sortOptio
 
 export function Modal({ isOpen, onClose, children }) {
   return (
-    <Dialog open={isOpen} className="modal">
+    <Dialog open={isOpen} onOpenChange={onClose} className="modal">
       <DialogOverlay />
       <DialogContent>
         {children}

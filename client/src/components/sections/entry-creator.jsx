@@ -44,7 +44,7 @@ export function EntryCreator() {
       </DropdownMenu>
 
       <Dialog open={showExpenseForm} onOpenChange={setShowExpenseForm}>
-        <DialogContent>
+        <DialogContent  className='overflow-auto  max-h-svh'>
           <ExpenseForm onSave={() => setShowExpenseForm(false)} onCancel={() => setShowExpenseForm(false)} />
         </DialogContent>
       </Dialog>

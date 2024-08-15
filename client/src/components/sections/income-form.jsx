@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Textarea } from "@/components/ui/textarea";
 import {
     DialogHeader,
@@ -9,34 +11,69 @@ import {
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Button } from "../ui/button";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"; // Adjust the import based on your project structure
+import { SourceSelect } from "./source-dropdown";  // Adjust the import based on your project structure
+import { useEffect } from "react";
+import moment from "moment";
+import { mutate } from "swr";
+
+// Define the Zod schema
+const incomeSchema = z.object({
+  amount: z.coerce.number().positive("Amount must be a positive number"),
+  date: z.string().nonempty("Date is required"),
+  source: z.string().nonempty("Source is required"),
+  description: z.string().optional(),
+});
 
 export function IncomeForm({ editEntry, onSave, onCancel }) {
-    const [newIncomeEntry, setNewIncomeEntry] = useState(
-      editEntry || {
-        amount: "",
-        date: "",
-        source: "",
-        description: "",
+    const {
+        register,
+        handleSubmit,
+        control,
+        setValue,
+        formState: { errors },
+    } = useForm({
+        resolver: zodResolver(incomeSchema),
+        defaultValues: editEntry || {
+          amount: null,
+          date: "",
+          source: "",
+          description: "",
+        },
+    });
+
+    // Set initial values if editing
+    useEffect(() => {
+      if (editEntry) {
+        setValue("amount", editEntry.amount);
+        setValue("date", moment(editEntry.date).format('yyyy-MM-DD'));
+        setValue("source", editEntry.source);
+        setValue("description", editEntry.description);
       }
-    );
+    }, [editEntry, setValue]);
 
-    const incomeSources = [
-      { value: "salary", label: "Salary" },
-      { value: "freelance", label: "Freelance" },
-      { value: "investments", label: "Investments" },
-      { value: "rent", label: "Rent" },
-      { value: "other", label: "Other" }
-    ];
+    const onSubmit = async (data) => {
+      try {
+        const method = editEntry ? 'PUT' : 'POST';
+        const url = editEntry ? `/api/income/${editEntry.id}` : '/api/income';
 
-    const handleSave = () => {
-      onSave(newIncomeEntry);
-      setNewIncomeEntry({
-        amount: "",
-        date: "",
-        source: "",
-        description: "",
-      });
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save income entry');
+        }
+
+        const result = await response.json();
+        onSave(result);
+        mutate('/api/dashboard/current-balance')
+      } catch (error) {
+        console.error('Error saving income entry:', error);
+      }
     };
 
     return (
@@ -51,76 +88,62 @@ export function IncomeForm({ editEntry, onSave, onCancel }) {
               : "Fill in the details for the new income entry."}
           </DialogDescription>
         </DialogHeader>
-        <div className='space-y-4'>
-          <div className='space-y-2'>
-            <Label htmlFor='amount'>Amount</Label>
-            <Input
-              id='amount'
-              type='number'
-              value={newIncomeEntry.amount}
-              onChange={(e) =>
-                setNewIncomeEntry({ ...newIncomeEntry, amount: e.target.value })
-              }
-              placeholder='Amount'
-            />
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className='space-y-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='amount'>Amount</Label>
+              <Input
+                id='amount'
+                type='number'
+                {...register('amount', { valueAsNumber: true })}
+                placeholder='Amount'
+              />
+              {errors.amount && <span className="text-red-500">{errors.amount.message}</span>}
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='date'>Date</Label>
+              <Input
+                id='date'
+                type='date'
+                {...register('date')}
+                placeholder='Date'
+              />
+              {errors.date && <span className="text-red-500">{errors.date.message}</span>}
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='source'>Source</Label>
+              <Controller
+                name="source"
+                control={control}
+                render={({ field }) => (
+                  <SourceSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+              )}
+              />
+             
+              {errors.source && <span className="text-red-500">{errors.source.message}</span>}
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='description'>Description</Label>
+              <Textarea
+                id='description'
+                {...register('description')}
+                placeholder='Description'
+              />
+              {errors.description && <span className="text-red-500">{errors.description.message}</span>}
+            </div>
           </div>
-          <div className='space-y-2'>
-            <Label htmlFor='date'>Date</Label>
-            <Input
-              id='date'
-              type='date'
-              value={newIncomeEntry.date}
-              onChange={(e) =>
-                setNewIncomeEntry({ ...newIncomeEntry, date: e.target.value })
-              }
-              placeholder='Date'
-            />
-          </div>
-          <div className='space-y-2'>
-            <Label htmlFor='source'>Source</Label>
-            <Select
-              value={newIncomeEntry.source}
-              onChange={(value) =>
-                setNewIncomeEntry({ ...newIncomeEntry, source: value })
-              }
-            >
-              <SelectTrigger className=''>
-                <SelectValue placeholder='Select source' />
-              </SelectTrigger>
-
-              <SelectContent>
-
-                {incomeSources.map((source) => (
-                  <SelectItem key={source.value} value={source.value}>
-                    {source.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className='space-y-2'>
-            <Label htmlFor='description'>Description</Label>
-            <Textarea
-              id='description'
-              value={newIncomeEntry.description}
-              onChange={(e) =>
-                setNewIncomeEntry({
-                  ...newIncomeEntry,
-                  description: e.target.value,
-                })
-              }
-              placeholder='Description'
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button type='button' onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type='button' onClick={handleSave}>
-            {editEntry ? "Update Entry" : "Add Entry"}
-          </Button>
-        </DialogFooter>
+          <DialogFooter  className='my-4'>
+            <Button type='button' onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button type='submit'>
+              {editEntry ? "Update Entry" : "Add Entry"}
+            </Button>
+          </DialogFooter>
+        </form>
       </>
     );
 }

@@ -11,6 +11,7 @@ import { Button } from "../ui/button";
 import {ArrowDown, ArrowUp, EllipsisVertical, FilePenIcon, TrashIcon } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "../ui/dropdown-menu";
 import { ArrowUpDownIcon } from "lucide-react"; // Assuming you have an up-down arrow icon
+import moment from "moment";
 
 export function IncomeList({ entries, onEdit, onDelete, onSortChange, sortOptions }) {
   return (
@@ -18,7 +19,7 @@ export function IncomeList({ entries, onEdit, onDelete, onSortChange, sortOption
           <TableHeader>
               <TableRow>
                   <TableHead className="cursor-pointer " onClick={() => onSortChange("date")}>
-                  <span className="flex items-center gap-3">
+                  <span className="flex items-center gap-3 min-w-[100px]">
                       Date
                       {sortOptions.key === "date" ? (
                           <span className="ml-1 text-primary w-5 h-5 flex items-center justify-center">{sortOptions.order === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown  className="w-3 h-3"/>}</span>
@@ -51,17 +52,17 @@ export function IncomeList({ entries, onEdit, onDelete, onSortChange, sortOption
                       </span>
 
                   </TableHead>
-                  <TableHead className="text-center">Description</TableHead>
+                  <TableHead className="text-center max-w-[200px]">Description</TableHead>
                   <TableHead className="">Actions</TableHead>
               </TableRow>
           </TableHeader>
           <TableBody>
               {entries.map((entry) => (
                   <TableRow key={entry.id}>
-                      <TableCell>{entry.date}</TableCell>
+                      <TableCell>{moment(entry.date).format('MMM DD, YYYY')}</TableCell>
                       <TableCell>{entry.source}</TableCell>
                       <TableCell className="text-start">{formatCurrency(entry.amount)}</TableCell>
-                      <TableCell className="text-center max-w-52">{ entry.description}</TableCell>
+                      <TableCell className="text-center max-w-[200px]">{ entry.description}</TableCell>
                       <TableCell className="">
                           <DropdownMenu>
                               <DropdownMenuTrigger asChild>
