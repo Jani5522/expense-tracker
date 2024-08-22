@@ -5,6 +5,7 @@ import {
   CircleUser,
   CreditCard,
   Home,
+  Loader,
   Menu,
   PieChart,
   PoundSterlingIcon,
@@ -52,7 +53,7 @@ export default function Dashboard({ children }) {
   const {logout} = useAuth();
 
   if (error) return <div>Failed to load</div>;
-  if (!data) return <div>Loading...</div>;
+  if (!data) return <Loader className='animate-spin text-primary w-10 h-10 m-auto my-10'></Loader>;
 
   return (
     <>

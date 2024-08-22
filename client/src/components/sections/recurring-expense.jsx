@@ -4,6 +4,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { XIcon } from "lucide-react";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog";
+import { formatCurrency } from '@/lib/formatters';
 
 export default function Component() {
   const fetcher = (url) => fetch(url).then((res) => res.json());
@@ -66,7 +67,7 @@ export default function Component() {
               <div className="text-sm text-muted-foreground">
                 <div className="flex items-center justify-between">
                   <span>Amount:</span>
-                  <span>${expense.amount}</span>
+                  <span>{formatCurrency(expense.amount)}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Frequency:</span>

@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/formatters";
 import Highcharts from "highcharts";
 import HighchartsReact from "highcharts-react-official";
 import { Link } from "react-router-dom";
+import { Badge } from "../ui/badge";
 
 export default function DashboardSection({ data }) {
   return (
@@ -13,11 +14,14 @@ export default function DashboardSection({ data }) {
         {data?.cards?.map((card, index) => (
           <Card key={index}>
             <CardHeader>
-              <CardTitle>{card.title}</CardTitle>
+              <div className="flex gap-2 items-center">
+                <CardTitle>{card.title}</CardTitle>
+                {card?.badge && <Badge variant='secondary' className='py-[1px] px-[5px] rounded-sm'>{card.badge}</Badge> }
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold">{formatCurrency(card.amount)}</div>
-              <div className="text-sm text-muted-foreground">{card.change}</div>
+              {card.amount !==null ? <div className="text-4xl font-bold">{formatCurrency(card.amount)}</div>: <div className="text-2xl font-bold text-primary">{card.change}</div>}
+              {card.amount !==null && <div className="text-sm text-muted-foreground">{card.change}</div>}
               {card.progress && <Progress value={card.progress.value} aria-label={card.progress.label} />}
             </CardContent>
           </Card>

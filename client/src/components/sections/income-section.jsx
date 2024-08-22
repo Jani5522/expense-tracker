@@ -15,7 +15,7 @@ const fetcher = (url) => fetch(url).then((res) => res.json());
 export default function IncomeSection() {
   // Fetching income entries and summary from the API
   const { data: incomeEntries = [], mutate } = useSWR('/api/income', fetcher);
-  const { data: incomeSummary, mutate: mutateSummary } = useSWR('/api/income/summary', fetcher);
+  const { data: incomeSummary, mutate: mutateSummary } = useSWR('/api/income/summary', fetcher,{refreshInterval: 2000});
 
   const [filterOptions, setFilterOptions] = useState({
     dateRange: {

@@ -150,12 +150,53 @@ router.get('/', async (req, res) => {
 
     // Fetch total income and total expenses
     const totalIncome = await prisma.incomeEntry.aggregate({
-      where: { userId },
+      where: { userId  },
       _sum: { amount: true },
     });
 
     const totalExpenses = await prisma.expenseEntry.aggregate({
       where: { userId },
+      _sum: { amount: true },
+    });
+
+    // Fetch total income and total expenses
+    const currentYearIncome = await prisma.incomeEntry.aggregate({
+      where: { userId,
+        date:{
+          gte: moment().startOf('year').toDate(),
+          lte: moment().endOf('year').toDate(),
+        }
+      },
+      _sum: { amount: true },
+    });
+
+    const currentYearExpense = await prisma.expenseEntry.aggregate({
+      where: { userId,
+        date:{
+          gte: moment().startOf('year').toDate(),
+          lte: moment().endOf('year').toDate(),
+        }
+      },
+      _sum: { amount: true },
+    });
+
+    // Fetch total income and total expenses
+    const currentTotalIncome = await prisma.incomeEntry.aggregate({
+      where: { userId,
+        date:{
+          gte: moment().startOf('month').toDate(),
+          lte: moment().endOf('month').toDate(),
+        }
+      },
+      _sum: { amount: true },
+    });
+
+    const currentTotalExpenses = await prisma.expenseEntry.aggregate({
+      where: { userId,
+        date:{
+          gte: moment().startOf('month').toDate(),
+          lte: moment().endOf('month').toDate(),
+        } },
       _sum: { amount: true },
     });
 
@@ -283,17 +324,38 @@ router.get('/', async (req, res) => {
 
     const averageAnnualSaving = await calculateAverageAnnualSavings(userId)
     const averageMonthlySavings = await calculateAverageMonthlySavings(userId);
+    
+    // Inside your existing dashboard API
+    const largestIncomeSource = await prisma.incomeEntry.groupBy({
+      by: ['source'],
+      where: { 
+        userId,
+        date:{
+          gte: moment().startOf('year').toDate(),
+          lte: moment().endOf('year').toDate(),
+        }
+      },
+      _sum: { amount: true },
+      orderBy: { _sum: { amount: 'desc' } },
+      take: 1,
+    });
+
     // Construct the response data
     const data = {
       cards: [
-        { title: 'Total Income', amount: totalIncome._sum.amount || 0, change: '' },
-        { title: 'Total Expenses', amount: totalExpenses._sum.amount || 0, change: '' },
-        { title: 'Monthly Budget', amount: totalMonthlyBudget._sum.budget || 0, change: '' },
-        { title: 'Budget Spent', amount: monthlyBudget.reduce((acc, budget) => acc + budget.spent, 0), progress: { value: (monthlyBudget.reduce((acc, budget) => acc + budget.spent, 0) / (totalMonthlyBudget._sum.budget || 1)) * 100, label: '' } },
-        { title: 'Remaining Budget ', amount: (totalMonthlyBudget._sum.budget || 0) - monthlyBudget.reduce((acc, budget) => acc + budget.spent, 0), change: '' },
-        { title: 'Total Saving', amount: totalSavings, change: '' },
+        { title: 'Total Income', amount: currentTotalIncome._sum.amount || 0, change: '', badge: moment().format('MMMM') },
+        { title: 'Total Expenses', amount: currentTotalExpenses._sum.amount || 0, change: '' , badge: moment().format('MMMM')  },
+        { title: 'Major Income Source', amount: null, change: largestIncomeSource[0]?.source || 'None', badge: moment().format('YYYY') },
+        { title: 'Annual Income', amount: currentYearIncome._sum.amount || 0, change: '', badge: moment().format('YYYY') },
+        { title: 'Annual Expenses', amount: currentYearExpense._sum.amount || 0, change: '' , badge: moment().format('YYYY')  },
+        { title: 'Annual Saving', amount: (currentYearIncome._sum.amount || 0) - (currentYearExpense._sum.amount || 0) , change: '' , badge: moment().format('YYYY')  },
+
+        { title: 'Monthly Budget', amount: totalMonthlyBudget._sum.budget || 0, change: '' , badge: moment().format('MMMM') },
+        { title: 'Budget Spent', amount: monthlyBudget.reduce((acc, budget) => acc + budget.spent, 0), progress: { value: (monthlyBudget.reduce((acc, budget) => acc + budget.spent, 0) / (totalMonthlyBudget._sum.budget || 1)) * 100, label: '' } , badge: moment().format('MMMM') },
+        { title: 'Remaining Budget ', amount: (totalMonthlyBudget._sum.budget || 0) - monthlyBudget.reduce((acc, budget) => acc + budget.spent, 0), change: '', badge: moment().format('MMMM')  },
         { title: 'Average Monthly Saving', amount: averageMonthlySavings || 0, change: '' },
         { title: 'Average Annual Saving', amount: averageAnnualSaving || 0, change: '' },
+        { title: 'Total Saving', amount: totalSavings, change: '' },
       ],
       expensesByCategory: {
         series: expensesByCategoryData,
